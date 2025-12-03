@@ -1,0 +1,104 @@
+#!/usr/bin/env ruby
+
+require 'roo'
+require 'erb'
+require 'base64'
+require 'wicked_pdf'
+require 'fileutils'
+
+if ARGV.length < 3
+  puts "Usage: ruby generate_slips.rb data.xlsx AnekMalayalam.ttf output.pdf"
+  exit 1
+end
+
+xlsx_path = ARGV[0]
+font_path = ARGV[1]
+output_pdf = ARGV[2]
+
+abort "Excel not found: #{xlsx_path}" unless File.exist?(xlsx_path)
+abort "Font not found: #{font_path}" unless File.exist?(font_path)
+
+template_path = File.join(__dir__, "templates", "slip.html.erb")
+abort "Template not found: #{template_path}" unless File.exist?(template_path)
+
+# Read Excel ---------------------
+sheet = Roo::Excelx.new(xlsx_path).sheet(0)
+
+header_row_index = nil
+sheet.each_with_index do |row, i|
+  next if row.compact.empty?
+  header_row_index = i + 1
+  break
+end
+
+headers = sheet.row(header_row_index).map(&:to_s)
+
+rows = []
+((header_row_index + 1)..sheet.last_row).each do |r|
+  row = sheet.row(r)
+  next if row.compact.empty?
+
+  row += [''] * (headers.length - row.length)
+  h = {}
+  headers.each_with_index { |k, i| h[k] = (row[i] || "").to_s }
+  rows << h
+end
+
+abort "No rows found" if rows.empty?
+
+# Base64 embed font -----------------------
+font_b64 = Base64.strict_encode64(File.binread(font_path))
+
+# Render HTML -----------------------------
+SLIPS_PER_PAGE = 6
+erb_template = ERB.new(File.read(template_path), trim_mode: "-")
+
+html = ""
+
+rows.each_slice(SLIPS_PER_PAGE).with_index do |group, page_index|
+  slips = group.map.with_index do |r, i|
+    {
+      serial: r["sl_no"],
+      name: r["name"] ,
+      gender: r["gender"],
+      house: r["house"] + " "+ r["h_number"],
+      guardian: r["guardian"],
+      card: r["sec_id"],
+    }
+  end
+
+  html << erb_template.result(binding)
+end
+
+# Inject font CSS block -------------------
+font_css = <<~CSS
+<style>
+@font-face {
+  font-family: 'AnekMalayalam';
+  src: url(data:font/ttf;base64,#{font_b64}) format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+}
+body {
+  font-family: 'AnekMalayalam', sans-serif;
+}
+</style>
+CSS
+
+if html.include?("<head>")
+  html.sub!("<head>", "<head>\n#{font_css}")
+else
+  html = font_css + html
+end
+
+# Generate final PDF ------------------------
+pdf = WickedPdf.new.pdf_from_string(
+  html,
+  page_size: "A4",
+  print_media_type: true,
+  encoding: 'UTF-8',
+  margin: { top: 0, bottom: 0, left: 0, right: 0 }
+)
+
+File.write(output_pdf, pdf)
+puts "Generated: #{output_pdf}"
