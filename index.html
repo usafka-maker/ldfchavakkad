@@ -3,7 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>TEAD UDF VYTHIRI — EVM demos</title>
+<title>TEAD UDF VYTHIRI — EVM Demo</title>
+
+<!-- 🔵 SOCIAL SHARE PREVIEW (IMPORTANT) -->
+<meta property="og:title" content="TEAD UDF VYTHIRI — EVM Demo" />
+<meta property="og:description" content="Interactive EVM demo for 15 wards under Congress + IUML alliance." />
+<meta property="og:image" content="https://YOURDOMAIN/share.png" />
+<meta property="og:url" content="https://YOURDOMAIN/" />
+<meta property="og:type" content="website" />
+
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="TEAD UDF VYTHIRI — EVM Demo" />
+<meta name="twitter:description" content="Interactive EVM demo for all wards." />
+<meta name="twitter:image" content="http://udfvythiri.in/share.png" />
+
 <style>
   :root{
     --bg:#f6f8fb;
@@ -26,148 +42,120 @@
 
   .wrap{
     width:100%;
-    max-width:980px;
+    max-width:900px;
   }
 
-  /* UPDATED HEADER WITH LIGHT TRICOLOR GRADIENT */
+  /* HEADER WITH TRICOLOR + CENTERED BOLD TEXT */
   header{
     background: linear-gradient(
       180deg,
-      rgba(255,153,51,0.18) 0%,   /* saffron */
-      rgba(255,255,255,0.65) 50%, /* white */
-      rgba(19,136,8,0.18) 100%    /* green */
+      rgba(255,153,51,0.18) 0%,
+      rgba(255,255,255,0.75) 50%,
+      rgba(19,136,8,0.18) 100%
     );
     border-radius:14px;
-    padding:32px 20px;
-    box-shadow:0 8px 30px rgba(15,23,42,0.06);
-    margin-bottom:22px;
-    text-align:center;   /* CENTER HEADING */
+    padding:35px 20px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.06);
+    margin-bottom:24px;
   }
 
-  /* CENTERED, BOLD HEADING */
   h1{
-    margin:0 0 6px 0;
-    font-size:28px;
-    color:var(--accent);
-    font-weight:800;     /* BOLD */
-    letter-spacing:0.6px;
+    margin:0;
+    font-size:30px;
+    font-weight:800;
+    color:#0b4a85; /* navy look */
+    letter-spacing:1px;
   }
 
   p.lead{
-    margin:0;
+    margin:6px 0 0;
     color:var(--muted);
+    font-size:17px;
     font-weight:600;
-    font-size:16px;
   }
 
   /* Layout */
-  main{
-    margin-top:8px;
-    display:grid;
-    grid-template-columns:1fr 360px;
-    gap:18px;
-  }
-
   .card{
     background:var(--card);
     border-radius:12px;
     padding:18px;
-    box-shadow:0 6px 20px rgba(15,23,42,0.04);
+    box-shadow:0 6px 20px rgba(0,0,0,0.05);
   }
 
-  /* Links list */
   .links{
     display:grid;
-    grid-template-columns:repeat(3, minmax(0,1fr));
+    grid-template-columns:repeat(3, 1fr);
     gap:10px;
     list-style:none;
     padding:0;
     margin:0;
   }
-
   .links a{
+    background:var(--link-bg);
+    padding:10px;
     display:block;
     text-decoration:none;
-    background:var(--link-bg);
-    color:var(--accent);
-    padding:10px 12px;
+    text-align:center;
     border-radius:8px;
     font-weight:700;
-    text-align:center;
-    box-shadow:inset 0 -1px 0 rgba(11,74,133,0.03);
-    transition:transform .12s, box-shadow .12s;
+    color:var(--accent);
+    transition:0.15s;
   }
   .links a:hover{
-    transform:translateY(-4px);
-    box-shadow:0 8px 20px rgba(11,74,133,0.06);
-  }
-
-  .info{
-    color:var(--muted);
-    font-size:14px;
-    line-height:1.45;
+    transform:translateY(-3px);
+    box-shadow:0 6px 18px rgba(0,0,0,0.07);
   }
 
   footer{
-    margin-top:18px;
+    margin-top:16px;
     text-align:center;
     color:var(--muted);
     font-size:13px;
   }
 
-  /* Responsive */
-  @media (max-width:880px){
-    main{ grid-template-columns:1fr; }
-    .links{ grid-template-columns:repeat(2, 1fr); }
+  @media (max-width:520px){
+    .links{ grid-template-columns:1fr 1fr; }
   }
-  @media (max-width:420px){
+  @media (max-width:400px){
     .links{ grid-template-columns:1fr; }
   }
 </style>
 </head>
 <body>
-  <div class="wrap">
+<div class="wrap">
 
-    <!-- UPDATED HEADER -->
-    <header>
-      <h1>TEAD UDF VYTHIRI</h1>
-      <p class="lead">EVM demo</p>
-    </header>
+  <header>
+    <h1>TEAD UDF VYTHIRI</h1>
+    <p class="lead">EVM Demo</p>
+  </header>
 
-    <main>
-      <div class="card">
-        <h3 style="margin-top:0;margin-bottom:12px;color:#0b4a85;">Available EVM demo pages</h3>
+  <div class="card">
+    <h3 style="margin-top:0;margin-bottom:14px;color:#0b4a85;">Select Ward</h3>
 
-        <ul class="links" aria-label="EVM demo links">
-          <li><a href="ward1.html"  target="_blank">Ward 1</a></li>
-          <li><a href="ward2.html"  target="_blank">Ward 2</a></li>
-          <li><a href="ward3.html"  target="_blank">Ward 3</a></li>
-          <li><a href="ward4.html"  target="_blank">Ward 4</a></li>
-          <li><a href="ward5.html"  target="_blank">Ward 5</a></li>
-          <li><a href="ward6.html"  target="_blank">Ward 6</a></li>
-          <li><a href="ward7.html"  target="_blank">Ward 7</a></li>
-          <li><a href="ward8.html"  target="_blank">Ward 8</a></li>
-          <li><a href="ward9.html"  target="_blank">Ward 9</a></li>
-          <li><a href="ward10.html" target="_blank">Ward 10</a></li>
-          <li><a href="ward11.html" target="_blank">Ward 11</a></li>
-          <li><a href="ward12.html" target="_blank">Ward 12</a></li>
-          <li><a href="ward13.html" target="_blank">Ward 13</a></li>
-          <li><a href="ward14.html" target="_blank">Ward 14</a></li>
-          <li><a href="ward15.html" target="_blank">Ward 15</a></li>
-        </ul>
+    <ul class="links">
+      <li><a href="ward1.html">Ward 1</a></li>
+      <li><a href="ward2.html">Ward 2</a></li>
+      <li><a href="ward3.html">Ward 3</a></li>
+      <li><a href="ward4.html">Ward 4</a></li>
+      <li><a href="ward5.html">Ward 5</a></li>
+      <li><a href="ward6.html">Ward 6</a></li>
+      <li><a href="ward7.html">Ward 7</a></li>
+      <li><a href="ward8.html">Ward 8</a></li>
+      <li><a href="ward9.html">Ward 9</a></li>
+      <li><a href="ward10.html">Ward 10</a></li>
+      <li><a href="ward11.html">Ward 11</a></li>
+      <li><a href="ward12.html">Ward 12</a></li>
+      <li><a href="ward13.html">Ward 13</a></li>
+      <li><a href="ward14.html">Ward 14</a></li>
+      <li><a href="ward15.html">Ward 15</a></li>
+    </ul>
 
-        <footer>
-          <div style="margin-top:12px;">
-            Ensure <code>ward1.html</code> to <code>ward15.html</code> exist in your repo.
-          </div>
-        </footer>
-      </div>
-
-      <aside class="card info">
-        <h4 style="margin-top:0;margin-bottom:10px;color:#0b4a85;">മാറാൻ കൊതിച്ഛ് വൈത്തിരി, മാറ്റാൻ ഉറച്ചു യുഡിഫ് </h4>
-        <p>   </p>
-      </aside>
-    </main>
+    <footer>
+     മാറാൻ കൊതിച്ച് വൈത്തിരി, മാറ്റാൻ ഉറച്ച് യുഡിഫ്
+    </footer>
   </div>
+
+</div>
 </body>
 </html>
