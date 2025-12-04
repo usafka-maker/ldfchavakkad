@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>EVM — Tabbed Ballot — Fully Synced LED Logic (Audio unlocked)</title>
+<title>EVM — Tabbed Ballot — Per-tab Special Candidate Icons</title>
 <style>
   :root{
     --pill1:#6f6f6f;
@@ -152,6 +152,11 @@
   .tabpanel{ display:none; }
   .tabpanel[aria-hidden="false"]{ display:block; }
 
+  @media (max-width:420px){
+    .row{ grid-template-columns:36px 1fr 36px 64px; }
+    .c-icon{ width:24px; height:24px; }
+  }
+
 </style>
 </head>
 <body>
@@ -195,28 +200,15 @@
 </div>
 
 <script>
-/* ---------- Audio unlock helper (fixes "no sound on first click") ---------- */
+/* ---------- Audio unlock helper ---------- */
 let audioCtx = null;
-
-// ensure an AudioContext exists and resume if suspended
 function ensureAudioContext() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') {
-    // try to resume; browsers require a user gesture but this is safe to call
-    audioCtx.resume().catch(()=>{ /* ignore */ });
-  }
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
   return audioCtx;
 }
-
-// Unlock on first user gesture proactively
 function unlockAudioOnUserGesture() {
-  const unlock = () => {
-    try {
-      ensureAudioContext();
-    } catch(e){}
-  };
+  const unlock = () => { try { ensureAudioContext(); } catch(e){} };
   window.addEventListener('pointerdown', unlock, { once:true, passive:true });
   window.addEventListener('touchstart', unlock, { once:true, passive:true });
   window.addEventListener('click', unlock, { once:true, passive:true });
@@ -226,11 +218,11 @@ unlockAudioOnUserGesture();
 /* Per-tab selection memory */
 const tabSelection = { ward:null, block:null, district:null };
 
-/* Names & icon logic */
+/* Names & icon logic: only special candidate has an icon */
 const tabConfig = {
-  ward:    { specialRow:2, name:"മുഹമ്മദ് മുസ്തഫ (വല്യപ്പു)", useIcon:true },
-  block:   { specialRow:1, name:"തസ്‌നി", useIcon:true },
-  district:{ specialRow:1, name:"ചന്ദ്രിക", useIcon:true }
+  ward:    { specialRow:2, name:"വത്സല സദാനന്ദൻ", useIcon:true,  icon: "iuml.png"     },
+  block:   { specialRow:1, name:"തെസ്നി അഷ്റഫ്",  useIcon:true,  icon: "iuml.png"  },
+  district:{ specialRow:2, name:"ചന്ദ്രിക കൃഷ്ണൻ", useIcon:true,  icon: "inc.png" }
 };
 
 /* Build rows */
@@ -244,14 +236,17 @@ function buildGrid(tab, el){
     row.className="row";
     row.dataset.index=i;
 
+    // Only special candidate gets the image
+    const iconHtml = (special && cfg.useIcon && cfg.icon)
+      ? `<img src="${cfg.icon}" class="c-icon" width="28" height="28" alt="symbol">`
+      : "";
+
     row.innerHTML = `
       <div class="serial">${i}</div>
       <div class="candidate">${special ? cfg.name : ""}</div>
-      <div class="icon-cell">
-        ${special && cfg.useIcon ? `<img src="udf_symbol-min.png" class="c-icon" width="28" height="28" alt="symbol">` : ""}
-      </div>
+      <div class="icon-cell">${iconHtml}</div>
       <div class="vote">
-        <div class="dot"></div>
+        <div class="dot" aria-hidden="true"></div>
         <div class="btn" tabindex="0" role="button" aria-label="Vote row ${i}"></div>
       </div>
     `;
@@ -259,52 +254,44 @@ function buildGrid(tab, el){
   }
 }
 
+/* Build all three grids */
 buildGrid("ward", document.getElementById("grid-ward"));
 buildGrid("block", document.getElementById("grid-block"));
 buildGrid("district", document.getElementById("grid-district"));
 
-/* DOM refs that handlers need */
+/* DOM refs */
 const statusLed = document.getElementById("statusLed");
 const tabs = document.querySelectorAll(".pill");
 const card = document.getElementById("mainCard");
 const unitLabel = document.getElementById("unitLabel");
 
-/* Updated playBuzzer that uses shared/resumable AudioContext */
-function playBuzzer(duration = 2000) {   // 2 seconds
+/* Buzzer: steady tone, 2s default */
+function playBuzzer(duration = 2000) {
   try {
     const ctx = ensureAudioContext();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const now = ctx.currentTime;
 
-    // NORMAL BUZZER TONE (steady frequency)
     osc.type = "square";
-    osc.frequency.setValueAtTime(450, now);  
-    // 450 Hz sounds like a standard buzzer / EVM tone
+    osc.frequency.setValueAtTime(450, now);
 
-    // volume envelope
     gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(0.18, now + 0.05);   // smooth attack
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
     gain.gain.setValueAtTime(0.18, now + (duration / 1000) - 0.1);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + (duration / 1000)); // soft fade
+    gain.gain.exponentialRampToValueAtTime(0.001, now + (duration / 1000));
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(now);
-
-    // stop oscillator after duration
-    setTimeout(() => {
-      try { osc.stop(); } catch (e) {}
-      try { osc.disconnect(); gain.disconnect(); } catch (e) {}
-    }, duration + 10);
-
-  } catch (e) {
+    setTimeout(()=>{ try{ osc.stop(); }catch(e){}; try{ osc.disconnect(); gain.disconnect(); }catch(e){} }, duration + 10);
+  } catch(e) {
     console.warn("playBuzzer failed:", e);
   }
 }
 
-/* Row click = Red dot + Red status LED + Save state */
+/* Row click handler */
 function attachHandler(gridEl){
   gridEl.addEventListener("click", e=>{
     const btn = e.target.closest(".btn");
@@ -314,12 +301,10 @@ function attachHandler(gridEl){
     if(!row) return;
     const dot = row.querySelector(".dot");
 
-    // brief pulse
     dot.classList.add("selected");
     setTimeout(()=> dot.classList.remove("selected"),600);
 
-    // sound (uses shared/resumed context)
-    playBuzzer();
+    playBuzzer(); // 2 seconds steady tone
 
     // clear red dots inside this tab and set this one
     gridEl.querySelectorAll(".dot-red").forEach(d=>d.classList.remove("dot-red"));
@@ -334,7 +319,6 @@ function attachHandler(gridEl){
     statusLed.classList.add("status-led-red");
   });
 
-  // keyboard activation
   gridEl.addEventListener("keydown", e=>{
     if(e.key==="Enter"||e.key===" "){
       const btn=e.target.closest(".btn");
@@ -347,7 +331,7 @@ attachHandler(document.getElementById("grid-ward"));
 attachHandler(document.getElementById("grid-block"));
 attachHandler(document.getElementById("grid-district"));
 
-/* TAB SWITCHING */
+/* Tab switching */
 tabs.forEach(t => {
   t.addEventListener("click", ()=> switchTab(t.dataset.tab) );
   t.addEventListener("keydown", (e) => {
@@ -362,21 +346,16 @@ tabs.forEach(t => {
 });
 
 function switchTab(tab){
-  // update pill selected state
   tabs.forEach(p=>p.setAttribute("aria-selected", p.dataset.tab===tab));
-
-  // toggle panels
   document.querySelectorAll(".tabpanel").forEach(panel=>{
     panel.setAttribute("aria-hidden", !panel.id.endsWith(tab));
   });
 
-  // change label
   unitLabel.textContent =
     tab==="ward" ? "Ballot Unit 1" :
     tab==="block" ? "Ballot Unit 2" :
     "Ballot Unit 3";
 
-  // change box color
   card.classList.remove("block-color","district-color");
   if(tab==="block") card.classList.add("block-color");
   if(tab==="district") card.classList.add("district-color");
