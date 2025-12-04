@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>EVM — Tabbed Ballot — Per-tab Special Candidate Icons</title>
+<style>
+  :root{
+    --pill1:#6f6f6f;
+    --pill2:#ffd8ea;
+    --pill3:#d9e9fb;
+    --led-red:#FF0000;
+    --led-green:#2fc24c;
+    --blue-btn:#0b4a85;
+    --maroon-dot:#8a1c1c;
+  }
+
+  body{
+    font-family: "Segoe UI", sans-serif;
+    background:#f5f5f5;
+    display:flex;
+    justify-content:center;
+    padding:30px 10px;
+  }
+
+  .container{ width:360px; max-width:95vw; }
+
+  /* Tabs */
+  .pills{
+    display:flex;
+    gap:12px;
+    justify-content:center;
+    margin-bottom:18px;
+  }
+  .pill{
+    padding:10px 20px;
+    border-radius:999px;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 6px 12px rgba(0,0,0,0.06);
+  }
+  .pill[data-tab="ward"]{ background:#6f6f6f; color:#fff; }
+  .pill[data-tab="block"]{ background:#ffd8ea; color:#222; }
+  .pill[data-tab="district"]{ background:#d9e9fb; color:#222; }
+  .pill[aria-selected="true"]{
+    transform:translateY(-2px);
+    box-shadow:0 12px 26px rgba(0,0,0,0.10);
+  }
+
+  /* Card */
+  .card{
+    background:#ffffff;
+    border-radius:16px;
+    padding:10px;
+    box-shadow:0 10px 20px rgba(0,0,0,0.06);
+    border:5px solid #eaeaea;
+    transition:background .25s ease;
+  }
+  .card.block-color{ background:#ffe6f1 !important; }
+  .card.district-color{ background:#e3f2ff !important; }
+
+  .header{
+    background:#f7f7f7;
+    border-radius:10px;
+    padding:12px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:10px;
+  }
+
+  /* STATUS LED */
+  .status-led{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:#cfcfcf;
+    transition:.18s;
+    margin-left:8px;
+  }
+  .status-led-green{
+    background:var(--led-green) !important;
+    box-shadow:0 0 10px var(--led-green);
+  }
+  .status-led-red{
+    background:var(--led-red) !important;
+    box-shadow:0 0 10px var(--led-red);
+  }
+
+  /* Grid */
+  .grid{
+    border:1px solid #e9e9e9;
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .row{
+    display:grid;
+    grid-template-columns:40px 1fr 36px 70px;
+    padding:12px 8px;
+    align-items:center;
+    border-bottom:1px solid #eee;
+  }
+
+  /* Row contents */
+  .serial{ text-align:center; font-weight:700; color:#666; }
+  .candidate{ font-weight:600; color:#222; }
+
+  /* Vote area */
+  .vote{
+    display:flex;
+    justify-content:flex-end;
+    gap:10px;
+    align-items:center;
+  }
+
+  .dot{
+    width:18px;
+    height:18px;
+    border-radius:50%;
+    background:var(--maroon-dot);
+    transition:.2s;
+  }
+  .dot.selected{
+    transform:scale(1.1);
+    box-shadow:0 0 10px rgba(0,0,0,0.2);
+  }
+  .dot-red{
+    background:var(--led-red) !important;
+    box-shadow:0 0 12px var(--led-red) !important;
+  }
+
+  .btn{
+    width:58px;
+    height:34px;
+    background:var(--blue-btn);
+    border-radius:16px;
+    cursor:pointer;
+  }
+
+  .icon-cell{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+  .c-icon{
+    width:28px;
+    height:28px;
+    object-fit:contain;
+  }
+
+  /* Panels */
+  .tabpanel{ display:none; }
+  .tabpanel[aria-hidden="false"]{ display:block; }
+
+  @media (max-width:420px){
+    .row{ grid-template-columns:36px 1fr 36px 64px; }
+    .c-icon{ width:24px; height:24px; }
+  }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- TAB BUTTONS -->
+  <div class="pills">
+    <div class="pill" aria-selected="true" tabindex="0" role="tab" data-tab="ward">Ward</div>
+    <div class="pill" aria-selected="false" tabindex="0" role="tab" data-tab="block">Block</div>
+    <div class="pill" aria-selected="false" tabindex="0" role="tab" data-tab="district">District</div>
+  </div>
+
+  <!-- BALLOT BOX -->
+  <div class="card" id="mainCard">
+
+    <div class="header">
+      <div class="status">
+        Ready 
+        <div id="statusLed" class="status-led" title="Status LED"></div>
+      </div>
+      <div id="unitLabel" style="font-weight:700;">Ballot Unit 1</div>
+    </div>
+
+    <!-- PANEL: WARD -->
+    <div class="tabpanel" id="panel-ward" aria-hidden="false">
+      <div class="grid" id="grid-ward"></div>
+    </div>
+
+    <!-- PANEL: BLOCK -->
+    <div class="tabpanel" id="panel-block" aria-hidden="true">
+      <div class="grid" id="grid-block"></div>
+    </div>
+
+    <!-- PANEL: DISTRICT -->
+    <div class="tabpanel" id="panel-district" aria-hidden="true">
+      <div class="grid" id="grid-district"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/* ---------- Audio unlock helper ---------- */
+let audioCtx = null;
+function ensureAudioContext() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+  return audioCtx;
+}
+function unlockAudioOnUserGesture() {
+  const unlock = () => { try { ensureAudioContext(); } catch(e){} };
+  window.addEventListener('pointerdown', unlock, { once:true, passive:true });
+  window.addEventListener('touchstart', unlock, { once:true, passive:true });
+  window.addEventListener('click', unlock, { once:true, passive:true });
+}
+unlockAudioOnUserGesture();
+
+/* Per-tab selection memory */
+const tabSelection = { ward:null, block:null, district:null };
+
+/* Names & icon logic: only special candidate has an icon */
+const tabConfig = {
+  ward:    { specialRow:2, name:"ഷൈനി ദേവസ്സി", useIcon:true,  icon: "inc.png"     },
+  block:   { specialRow:1, name:"തെസ്നി അഷ്റഫ്",  useIcon:true,  icon: "iuml.png"  },
+  district:{ specialRow:2, name:"ചന്ദ്രിക കൃഷ്ണൻ", useIcon:true,  icon: "inc.png" }
+};
+
+/* Build rows */
+function buildGrid(tab, el){
+  el.innerHTML = "";
+  const cfg = tabConfig[tab];
+
+  for(let i=1; i<=10; i++){
+    const special = i===cfg.specialRow;
+    const row = document.createElement("div");
+    row.className="row";
+    row.dataset.index=i;
+
+    // Only special candidate gets the image
+    const iconHtml = (special && cfg.useIcon && cfg.icon)
+      ? `<img src="${cfg.icon}" class="c-icon" width="28" height="28" alt="symbol">`
+      : "";
+
+    row.innerHTML = `
+      <div class="serial">${i}</div>
+      <div class="candidate">${special ? cfg.name : ""}</div>
+      <div class="icon-cell">${iconHtml}</div>
+      <div class="vote">
+        <div class="dot" aria-hidden="true"></div>
+        <div class="btn" tabindex="0" role="button" aria-label="Vote row ${i}"></div>
+      </div>
+    `;
+    el.appendChild(row);
+  }
+}
+
+/* Build all three grids */
+buildGrid("ward", document.getElementById("grid-ward"));
+buildGrid("block", document.getElementById("grid-block"));
+buildGrid("district", document.getElementById("grid-district"));
+
+/* DOM refs */
+const statusLed = document.getElementById("statusLed");
+const tabs = document.querySelectorAll(".pill");
+const card = document.getElementById("mainCard");
+const unitLabel = document.getElementById("unitLabel");
+
+/* Buzzer: steady tone, 2s default */
+function playBuzzer(duration = 2000) {
+  try {
+    const ctx = ensureAudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const now = ctx.currentTime;
+
+    osc.type = "square";
+    osc.frequency.setValueAtTime(450, now);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.18, now + 0.05);
+    gain.gain.setValueAtTime(0.18, now + (duration / 1000) - 0.1);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + (duration / 1000));
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    setTimeout(()=>{ try{ osc.stop(); }catch(e){}; try{ osc.disconnect(); gain.disconnect(); }catch(e){} }, duration + 10);
+  } catch(e) {
+    console.warn("playBuzzer failed:", e);
+  }
+}
+
+/* Row click handler */
+function attachHandler(gridEl){
+  gridEl.addEventListener("click", e=>{
+    const btn = e.target.closest(".btn");
+    if(!btn) return;
+
+    const row = btn.closest(".row");
+    if(!row) return;
+    const dot = row.querySelector(".dot");
+
+    dot.classList.add("selected");
+    setTimeout(()=> dot.classList.remove("selected"),600);
+
+    playBuzzer(); // 2 seconds steady tone
+
+    // clear red dots inside this tab and set this one
+    gridEl.querySelectorAll(".dot-red").forEach(d=>d.classList.remove("dot-red"));
+    dot.classList.add("dot-red");
+
+    // save selection for this tab
+    const activeTab = document.querySelector(".pill[aria-selected='true']").dataset.tab;
+    tabSelection[activeTab] = row.dataset.index;
+
+    // status LED: green -> red
+    statusLed.classList.remove("status-led-green");
+    statusLed.classList.add("status-led-red");
+  });
+
+  gridEl.addEventListener("keydown", e=>{
+    if(e.key==="Enter"||e.key===" "){
+      const btn=e.target.closest(".btn");
+      if(btn){ e.preventDefault(); btn.click(); }
+    }
+  });
+}
+
+attachHandler(document.getElementById("grid-ward"));
+attachHandler(document.getElementById("grid-block"));
+attachHandler(document.getElementById("grid-district"));
+
+/* Tab switching */
+tabs.forEach(t => {
+  t.addEventListener("click", ()=> switchTab(t.dataset.tab) );
+  t.addEventListener("keydown", (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); t.click(); }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const arr = Array.from(tabs);
+      const idx = arr.indexOf(t);
+      const nextIdx = e.key === 'ArrowRight' ? (idx+1)%arr.length : (idx-1+arr.length)%arr.length;
+      arr[nextIdx].focus();
+    }
+  });
+});
+
+function switchTab(tab){
+  tabs.forEach(p=>p.setAttribute("aria-selected", p.dataset.tab===tab));
+  document.querySelectorAll(".tabpanel").forEach(panel=>{
+    panel.setAttribute("aria-hidden", !panel.id.endsWith(tab));
+  });
+
+  unitLabel.textContent =
+    tab==="ward" ? "Ballot Unit 1" :
+    tab==="block" ? "Ballot Unit 2" :
+    "Ballot Unit 3";
+
+  card.classList.remove("block-color","district-color");
+  if(tab==="block") card.classList.add("block-color");
+  if(tab==="district") card.classList.add("district-color");
+
+  // reset status LED to green
+  statusLed.classList.remove("status-led-red");
+  statusLed.classList.add("status-led-green");
+
+  // restore saved dot for this tab
+  const saved = tabSelection[tab];
+  const grid = document.getElementById(`grid-${tab}`);
+  grid.querySelectorAll(".dot-red").forEach(d=>d.classList.remove("dot-red"));
+  if(saved){
+    const rowDot = grid.querySelector(`.row[data-index="${saved}"] .dot`);
+    if(rowDot) rowDot.classList.add("dot-red");
+  }
+}
+
+/* initial tab + initial status LED green */
+switchTab("ward");
+statusLed.classList.add("status-led-green");
+</script>
+
+</body>
+</html>
